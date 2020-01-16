@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 from datetime import datetime
-from nonparametric_conditional_quantile_estimator import iteratively_reweighted_least_squares, cross_validation
-from data_processor import load_china_p2p_data, load_assets
+from nonparametric_conditional_quantile_estimator import iteratively_reweighted_least_squares, cross_validation, \
+    check_function
+from data_processor import load_china_p2p_data, load_imdb_data, load_assets
 from portfolio_solver import compute_gamma, compute_portfolio_weights, InfeasibleProblemException
 
 
@@ -126,23 +127,125 @@ def evaluation_2():
                                                                   np.mean(df[['emp_length', 'purpose']]).to_numpy(),
                                                                   np.array(h), np.array(g))
         estimated_quantiles.append(estimated_quantile)
-    return estimated_quantiles
+
+    results = {tau: estimated_quantile for tau, estimated_quantile in zip(taus, estimated_quantiles)}
+    js = json.dumps(results)
+    with open(f"results/evaluation_2_N_{N}_{str(datetime.now())}.json", "w") as f:
+        f.write(js)
+
+    return results
+
+
+def evaluation_imdb():
+    df = load_imdb_data()
+    N = 10
+    os_vals = []
+    for i in range(N):
+        print(f"i = {i}/{N} iterations")
+        df = df.sample(df.shape[0])
+        splitting_idx = int(df.shape[0] * 0.9)
+        df_in = df.iloc[:splitting_idx, :]
+        df_out = df.iloc[splitting_idx:, :]
+        H = {
+            "imdb_score": [i * (max(df.imdb_score) - min(df.imdb_score)) / 30 for i in range(1, 10)]
+        }
+        G = {
+            "content_rating": [i * (max(df.content_rating) - min(df.content_rating)) / 20 for i in range(1, 10)]
+        }
+        tau = 0.9
+        h, g = cross_validation(tau, df_in[["gross"]].to_numpy(), df_in[["imdb_score"]].to_numpy(),
+                                df_in[["content_rating"]].to_numpy(), H, G)
+        os_check_values = []
+        for _, row in df_out.iterrows():
+            os_check_values.append(
+                check_function(row.gross - iteratively_reweighted_least_squares(tau, df_in.gross.to_numpy(),
+                                                                                df_in.imdb_score.to_numpy().reshape(
+                                                                                    df_in.imdb_score.shape[0], 1),
+                                                                                np.array([row.imdb_score]),
+                                                                                df_in.content_rating.to_numpy().reshape(
+                                                                                    df_in.content_rating.shape[0], 1),
+                                                                                np.array([row.content_rating]),
+                                                                                np.array(h), np.array(g)), tau))
+        os_vals.append(np.mean(os_check_values))
+    print(f"Mean: {np.mean(os_vals)}, Std: {np.std(os_vals)}")
+    return os_vals
 
 
 if __name__ == "__main__":
-    tau = 0.05
-    # mu = np.array([0.05, 0.1, 0.25])
-    # sigma = np.array([[0.03, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.5]])
-    mu, sigma = load_assets(['^GSPC', '^TNX', 'BTC-USD'])
+    """
+    Getting returns and covariance
+    """
+    tickers = [1, 2, 3]
+    ticker_assets = {1: 'Low-risk asset', 2: 'Mid-risk asset', 3: 'High-risk asset'}
+    mu = np.array([0.05, 0.1, 0.25])
+    sigma = np.array([[0.03, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.5]])
+    # sigma = np.array([[0.01, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.6]])
+    # tickers = ['^GSPC', '^TYX', 'AAPL']
+    # ticker_assets = {'^GSPC': 'S&P500', '^TNX': 'Treasury Yield 10 Years', 'BTC-USD': 'Bitcoin US',
+    #                  '^HSI': 'Hang Seng Index', '^DJI': 'Dow Jones', 'AAPL': 'Apple', '^IRX': '13 Week Treasury Bill',
+    #                  '^TYX': 'Treasury Yield 30 Years'}
+    # mu, sigma = load_assets(tickers)
+    print(mu)
+    print(sigma)
 
+    """
+    Test to get conditional quantile value at 5% quantile
+    """
+    tau = 0.05
     # d = evaluation_1()
-    with open("results/evaluation_1_N_100.json") as f:
+    with open("results/evaluation_1_N_1000.json") as f:
         d = json.load(f)
+    gammas = []
+    weights = np.array([])
     for k in d.keys():
-        for H in d[k][1]:
+        for val, H in zip(d[k][0], d[k][1]):
             try:
                 gamma = compute_gamma(H, tau, mu, sigma)
                 portfolio_weights = compute_portfolio_weights(gamma, mu, sigma)
-                print(f"Feature: {k}, H: {H}, gamma: {gamma}, portfolio_weights: {portfolio_weights}")
+                print(f"Feature: {k}={val}, H: {H}, gamma: {gamma}, portfolio_weights: {portfolio_weights}")
+                gammas.append(gamma)
+                weights = np.append(weights, portfolio_weights)
             except InfeasibleProblemException:
                 pass
+    weights = weights.reshape((len(gammas), len(tickers)))
+    fig, axs = plt.subplots(ncols=len(tickers), figsize=(18, 5))
+    for i in range(len(tickers)):
+        lst = sorted(zip(gammas, weights[:, i]))
+        pts = np.array([lst[i] for i in range(0, len(lst), 2)])
+        axs[i].scatter(pts[:, 0], pts[:, 1])
+        axs[i].set_xlabel('Implied Risk Aversion')
+        axs[i].set_ylabel('Allocation')
+        axs[i].set_title(ticker_assets[tickers[i]])
+    plt.savefig(f"results/Portfolio_Weights_{str(datetime.now())}.jpg")
+
+    """
+    Test to get conditional quantile values at various quantiles, with conditioned covariates fixed at mean
+    """
+    # results = evaluation_2()
+    # with open("results/evaluation_2_N_100.json") as f:
+    #     results = json.load(f)
+    # for tau, H in results.items():
+    #     try:
+    #         gamma = compute_gamma(H, tau, mu, sigma)
+    #         portfolio_weights = compute_portfolio_weights(gamma, mu, sigma)
+    #         print(f"H: {H}, tau: {tau}, gamma: {gamma}, portfolio_weights: {portfolio_weights}")
+    #     except InfeasibleProblemException:
+    #         pass
+
+    """
+    Test portfolio with new investor's demographics and goals
+    """
+    # df = load_china_p2p_data()
+    # H = iteratively_reweighted_least_squares(tau, df[['int_rate']].to_numpy(),
+    #                                          df[['funded_amnt', 'annual_inc', 'dti']].to_numpy(),
+    #                                          np.array([25, 100, 20]),
+    #                                          df[['emp_length', 'purpose']].to_numpy(), np.array([1, 1]),
+    #                                          np.array([7.8, 82.48400000000001, 18.54]), np.array([5.4, 1.8]))
+    # print(f"H: {H}, tau: {tau}")
+    # try:
+    #     gamma = compute_gamma(H, tau, mu, sigma)
+    #     portfolio_weights = compute_portfolio_weights(gamma, mu, sigma)
+    #     print(f"H: {H}, tau: {tau}, gamma: {gamma}, portfolio_weights: {portfolio_weights}")
+    # except InfeasibleProblemException:
+    #     print("Infeasible")
+    #     pass

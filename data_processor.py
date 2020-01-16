@@ -48,6 +48,19 @@ def load_china_p2p_data():
     return df
 
 
+def load_imdb_data():
+    df = pd.read_csv("data/movie_metadata.csv")
+    df = df[(df["title_year"] >= 2011) & (df["title_year"] <= 2013)]
+    df = df[["gross", "imdb_score", "content_rating"]]
+    df = df[df["gross"] >= 6000000.0]
+    df = df[(df["content_rating"] == "PG-13") | (df["content_rating"] == "PG")]
+    df["content_rating"] = df["content_rating"].apply(lambda x: 0 if x == "PG-13" else 1)
+    df["gross"] /= 10 ** 6
+    df.dropna(inplace=True)
+
+    return df
+
+
 def load_assets(tickers, start_date=None):
     data = []
     for ticker in tickers:
