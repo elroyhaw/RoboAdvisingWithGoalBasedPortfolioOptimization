@@ -32,14 +32,14 @@ def iteratively_reweighted_least_squares(tau, Y, X_c, x_c, X_d, x_d, h, g):
     alpha_prev, beta_prev = weighted_least_square(Y, X_c - x_c, weights)
 
     # first iteration
-    K_tau = new_weights(tau, Y, X_c, x_c, h, alpha_prev, beta_prev)
+    K_tau = new_weights(tau, Y, X_c, x_c, X_d, x_d, h, g, alpha_prev, beta_prev)
     alpha_curr, beta_curr = weighted_least_square(Y, X_c - x_c, K_tau)
     first_mae = abs(alpha_curr - alpha_prev)
     threshold = 0.01 * first_mae
 
     # subsequent iterations
     while abs(alpha_curr - alpha_prev) >= threshold:
-        K_tau = new_weights(tau, Y, X_c, x_c, h, alpha_curr, beta_curr)
+        K_tau = new_weights(tau, Y, X_c, x_c, X_d, x_d, h, g, alpha_curr, beta_curr)
         alpha_prev, beta_prev = alpha_curr, beta_curr
         alpha, beta = weighted_least_square(Y, X_c - x_c, K_tau)
         alpha_curr, beta_curr = alpha, beta
@@ -67,7 +67,7 @@ def weighted_least_square(Y, X, weights):
     return params[0], params[1:]
 
 
-def new_weights(tau, Y, X_c, x_c, h, alpha, beta):
+def new_weights(tau, Y, X_c, x_c, X_d, x_d, h, g, alpha, beta):
     """
     Helper function to compute new weights as in K_\tau in Section 3.3.1
 
@@ -75,7 +75,10 @@ def new_weights(tau, Y, X_c, x_c, h, alpha, beta):
     :param Y: Response vector
     :param X_c: Continuous covariates matrix
     :param x_c: Given continuous vector
+    :param X_d: Discrete covariates matrix
+    :param x_d: Given discrete vector
     :param h: Bandwith vector for continuous covariates
+    :param g: Bandwith vector for discrete covariates
     :param alpha: Intercept from previous iteration
     :param beta: Slope from previous iteration
     :type tau: float
@@ -100,8 +103,8 @@ def new_weights(tau, Y, X_c, x_c, h, alpha, beta):
             return 0
 
     theta = np.array(list(map(transform, residuals))).flatten()
-    # element-wise multiply; theta is vector, K is vector
-    return theta * K(X_c, x_c, h)
+    # element-wise multiply; theta is vector, K is vector, L is vector
+    return theta * K(X_c, x_c, h) * L(X_d, x_d, g)
 
 
 def K(X_c, x_c, h):
