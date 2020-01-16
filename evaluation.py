@@ -62,7 +62,7 @@ def plot_estimated_quantiles(estimated_quantiles, cts_vars, discrete_vars, cts_v
 
 def evaluation_1():
     df = load_china_p2p_data()
-    N = 100
+    N = 1000
     df = df.sample(N)
     n = 5
     H = {
@@ -175,48 +175,48 @@ if __name__ == "__main__":
     """
     Getting returns and covariance
     """
-    tickers = [1, 2, 3]
-    ticker_assets = {1: 'Low-risk asset', 2: 'Mid-risk asset', 3: 'High-risk asset'}
-    mu = np.array([0.05, 0.1, 0.25])
-    sigma = np.array([[0.03, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.5]])
+    # tickers = [1, 2, 3]
+    # ticker_assets = {1: 'Low-risk asset', 2: 'Mid-risk asset', 3: 'High-risk asset'}
+    # mu = np.array([0.05, 0.1, 0.25])
+    # sigma = np.array([[0.03, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.5]])
     # sigma = np.array([[0.01, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.6]])
     # tickers = ['^GSPC', '^TYX', 'AAPL']
     # ticker_assets = {'^GSPC': 'S&P500', '^TNX': 'Treasury Yield 10 Years', 'BTC-USD': 'Bitcoin US',
     #                  '^HSI': 'Hang Seng Index', '^DJI': 'Dow Jones', 'AAPL': 'Apple', '^IRX': '13 Week Treasury Bill',
     #                  '^TYX': 'Treasury Yield 30 Years'}
     # mu, sigma = load_assets(tickers)
-    print(mu)
-    print(sigma)
+    # print(mu)
+    # print(sigma)
 
     """
     Test to get conditional quantile value at 5% quantile
     """
-    tau = 0.05
-    # d = evaluation_1()
-    with open("results/evaluation_1_N_1000.json") as f:
-        d = json.load(f)
-    gammas = []
-    weights = np.array([])
-    for k in d.keys():
-        for val, H in zip(d[k][0], d[k][1]):
-            try:
-                gamma = compute_gamma(H, tau, mu, sigma)
-                portfolio_weights = compute_portfolio_weights(gamma, mu, sigma)
-                print(f"Feature: {k}={val}, H: {H}, gamma: {gamma}, portfolio_weights: {portfolio_weights}")
-                gammas.append(gamma)
-                weights = np.append(weights, portfolio_weights)
-            except InfeasibleProblemException:
-                pass
-    weights = weights.reshape((len(gammas), len(tickers)))
-    fig, axs = plt.subplots(ncols=len(tickers), figsize=(18, 5))
-    for i in range(len(tickers)):
-        lst = sorted(zip(gammas, weights[:, i]))
-        pts = np.array([lst[i] for i in range(0, len(lst), 2)])
-        axs[i].scatter(pts[:, 0], pts[:, 1])
-        axs[i].set_xlabel('Implied Risk Aversion')
-        axs[i].set_ylabel('Allocation')
-        axs[i].set_title(ticker_assets[tickers[i]])
-    plt.savefig(f"results/Portfolio_Weights_{str(datetime.now())}.jpg")
+    # tau = 0.05
+    d = evaluation_1()
+    # with open("results/evaluation_1_N_1000.json") as f:
+    #     d = json.load(f)
+    # gammas = []
+    # weights = np.array([])
+    # for k in d.keys():
+    #     for val, H in zip(d[k][0], d[k][1]):
+    #         try:
+    #             gamma = compute_gamma(H, tau, mu, sigma)
+    #             portfolio_weights = compute_portfolio_weights(gamma, mu, sigma)
+    #             print(f"Feature: {k}={val}, H: {H}, gamma: {gamma}, portfolio_weights: {portfolio_weights}")
+    #             gammas.append(gamma)
+    #             weights = np.append(weights, portfolio_weights)
+    #         except InfeasibleProblemException:
+    #             pass
+    # weights = weights.reshape((len(gammas), len(tickers)))
+    # fig, axs = plt.subplots(ncols=len(tickers), figsize=(18, 5))
+    # for i in range(len(tickers)):
+    #     lst = sorted(zip(gammas, weights[:, i]))
+    #     pts = np.array([lst[i] for i in range(0, len(lst), 2)])
+    #     axs[i].scatter(pts[:, 0], pts[:, 1])
+    #     axs[i].set_xlabel('Implied Risk Aversion')
+    #     axs[i].set_ylabel('Allocation')
+    #     axs[i].set_title(ticker_assets[tickers[i]])
+    # plt.savefig(f"results/Portfolio_Weights_{str(datetime.now())}.jpg")
 
     """
     Test to get conditional quantile values at various quantiles, with conditioned covariates fixed at mean

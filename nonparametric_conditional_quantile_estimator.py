@@ -1,6 +1,7 @@
 import numpy as np
 import statsmodels.api as sm
 import itertools
+import concurrent.futures
 
 
 def iteratively_reweighted_least_squares(tau, Y, X_c, x_c, X_d, x_d, h, g):
@@ -192,22 +193,42 @@ def cross_validation(tau, Y, X_c, X_d, H, G):
     # H = {h_1: [...], ..., h_p: [...]}, G = {g_1: [...], ..., g_q: [...]}
     hs = list(itertools.product(*H.values()))
     gs = list(itertools.product(*G.values()))
-    CV_err_h_g = {}
+    args = []
     for h_idx, h in enumerate(hs):
         for g_idx, g in enumerate(gs):
-            CV_err = []
-            for i in range(Y.shape[0]):
-                # leave out i-th obs as validation
-                Y_val = Y[i]
-                X_c_val = X_c[i]
-                X_d_val = X_d[i]
-                # remove i-th obs from training set
-                Y_tr = np.delete(Y, i)
-                X_c_tr = np.delete(X_c, i, 0)
-                X_d_tr = np.delete(X_d, i, 0)
-                Y_val_pred = iteratively_reweighted_least_squares(tau, Y_tr, X_c_tr, X_c_val, X_d_tr, X_d_val, h, g)
-                CV_err.append(check_function(Y_val - Y_val_pred, tau))
-            print(f"Iteration with (h_idx, g_idx) = {(h_idx, g_idx)} error: {np.mean(CV_err)}")
-            CV_err_h_g[(h_idx, g_idx)] = np.mean(CV_err)
+            args.append((tau, Y, X_c, X_d, h_idx, h, g_idx, g))
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        results = executor.map(loocv, args)
+        CV_err_h_g = {}
+        for result in results:
+            idx, err = result
+            CV_err_h_g[idx] = err
     min_h_idx, min_g_idx = min(CV_err_h_g, key=CV_err_h_g.get)
     return hs[min_h_idx], gs[min_g_idx]
+
+
+def loocv(arg):
+    """
+    Helper function to carry out leave-one-out cross-validation
+
+    :param arg: tau, Y, X_c, X_d, h_idx, h, g_idx, g
+    :type arg: tuple
+    :return: Indices of h and g, cross-validation error
+    :rtype: tuple, float
+    """
+    tau, Y, X_c, X_d, h_idx, h, g_idx, g = arg
+    print(f"Start iteration with (h_idx, g_idx) = {(h_idx, g_idx)}")
+    CV_err = []
+    for i in range(Y.shape[0]):
+        # leave out i-th obs as validation
+        Y_val = Y[i]
+        X_c_val = X_c[i]
+        X_d_val = X_d[i]
+        # remove i-th obs from training set
+        Y_tr = np.delete(Y, i)
+        X_c_tr = np.delete(X_c, i, 0)
+        X_d_tr = np.delete(X_d, i, 0)
+        Y_val_pred = iteratively_reweighted_least_squares(tau, Y_tr, X_c_tr, X_c_val, X_d_tr, X_d_val, h, g)
+        CV_err.append(check_function(Y_val - Y_val_pred, tau))
+    print(f"End iteration with (h_idx, g_idx) = {(h_idx, g_idx)} error: {np.mean(CV_err)}")
+    return (h_idx, g_idx), np.mean(CV_err)
