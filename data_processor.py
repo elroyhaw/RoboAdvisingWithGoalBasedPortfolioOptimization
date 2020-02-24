@@ -5,6 +5,11 @@ from datetime import datetime
 
 
 def load_china_p2p_data():
+    """
+    Load and process P2P lending data
+
+    """
+
     df = pd.read_csv("data/chinaP2PData.csv")
     df.drop(index=0, inplace=True)
     df.reset_index(drop=True, inplace=True)
@@ -49,6 +54,11 @@ def load_china_p2p_data():
 
 
 def load_imdb_data():
+    """
+    Load and process IMDb data
+
+    """
+
     df = pd.read_csv("data/movie_metadata.csv")
     df = df[(df["title_year"] >= 2011) & (df["title_year"] <= 2013)]
     df = df[["gross", "imdb_score", "content_rating"]]
@@ -62,6 +72,18 @@ def load_imdb_data():
 
 
 def load_assets(tickers, start_date=None):
+    """
+    Get returns and covariance matrix of selected tickers
+
+    :param tickers: List of tickers
+    :param start_date: Start date
+    :type tickers: list
+    :type start_date: datetime
+    :return: Tuple of returns, covariance
+    :rtype: tuple
+    """
+
+
     data = []
     for ticker in tickers:
         if start_date:
