@@ -173,26 +173,24 @@ def evaluation_imdb():
 
 if __name__ == "__main__":
     """
+    Test IMDb data
+    """
+    # evaluation_imdb()
+
+    """
     Getting returns and covariance
     """
     # tickers = [1, 2, 3]
     # ticker_assets = {1: 'Low-risk asset', 2: 'Mid-risk asset', 3: 'High-risk asset'}
     # mu = np.array([0.05, 0.1, 0.25])
     # sigma = np.array([[0.03, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.5]])
-    # sigma = np.array([[0.01, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.6]])
-    # tickers = ['^GSPC', '^TYX', 'AAPL']
-    # ticker_assets = {'^GSPC': 'S&P500', '^TNX': 'Treasury Yield 10 Years', 'BTC-USD': 'Bitcoin US',
-    #                  '^HSI': 'Hang Seng Index', '^DJI': 'Dow Jones', 'AAPL': 'Apple', '^IRX': '13 Week Treasury Bill',
-    #                  '^TYX': 'Treasury Yield 30 Years'}
-    # mu, sigma = load_assets(tickers)
-    # print(mu)
-    # print(sigma)
 
     """
     Test to get conditional quantile value at 5% quantile
     """
     # tau = 0.05
-    d = evaluation_1()
+    # d = evaluation_1()
+    ## Uncomment next two lines if evaluation was done and saved
     # with open("results/evaluation_1_N_1000.json") as f:
     #     d = json.load(f)
     # gammas = []
@@ -222,6 +220,7 @@ if __name__ == "__main__":
     Test to get conditional quantile values at various quantiles, with conditioned covariates fixed at mean
     """
     # results = evaluation_2()
+    ## Uncomment next two lines if evaluation was done and saved
     # with open("results/evaluation_2_N_100.json") as f:
     #     results = json.load(f)
     # for tau, H in results.items():
