@@ -180,19 +180,21 @@ if __name__ == "__main__":
     """
     Getting returns and covariance
     """
-    # tickers = [1, 2, 3]
-    # ticker_assets = {1: 'Low-risk asset', 2: 'Mid-risk asset', 3: 'High-risk asset'}
-    # mu = np.array([0.05, 0.1, 0.25])
-    # sigma = np.array([[0.03, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.5]])
+    tickers = [1, 2, 3]
+    ticker_assets = {1: 'Low-risk asset', 2: 'Mid-risk asset', 3: 'High-risk asset'}
+    mu = np.array([0.05, 0.1, 0.25])
+    sigma = np.array([[0.03, 0, 0], [0, 0.2, 0.02], [0, 0.02, 0.5]])
 
     """
     Test to get conditional quantile value at 5% quantile
     """
+    # use_generated_results = True
     # tau = 0.05
-    # d = evaluation_1()
-    ## Uncomment next two lines if evaluation was done and saved
-    # with open("results/evaluation_1_N_1000.json") as f:
-    #     d = json.load(f)
+    # if use_generated_results:
+    #     with open("results/evaluation_1_N_1000.json") as f:
+    #         d = json.load(f)
+    # else:
+    #     d = evaluation_1()
     # gammas = []
     # weights = np.array([])
     # for k in d.keys():
@@ -219,13 +221,15 @@ if __name__ == "__main__":
     """
     Test to get conditional quantile values at various quantiles, with conditioned covariates fixed at mean
     """
-    # results = evaluation_2()
-    ## Uncomment next two lines if evaluation was done and saved
-    # with open("results/evaluation_2_N_100.json") as f:
-    #     results = json.load(f)
+    # use_generated_results = True
+    # if use_generated_results:
+    #     with open("results/evaluation_2_N_100.json") as f:
+    #         results = json.load(f)
+    # else:
+    #     results = evaluation_2()
     # for tau, H in results.items():
     #     try:
-    #         gamma = compute_gamma(H, tau, mu, sigma)
+    #         gamma = compute_gamma(H, float(tau), mu, sigma)
     #         portfolio_weights = compute_portfolio_weights(gamma, mu, sigma)
     #         print(f"H: {H}, tau: {tau}, gamma: {gamma}, portfolio_weights: {portfolio_weights}")
     #     except InfeasibleProblemException:
@@ -235,16 +239,19 @@ if __name__ == "__main__":
     Test portfolio with new investor's demographics and goals
     """
     # df = load_china_p2p_data()
+    # # New investor's demographics and goals
+    # x_c = np.array([25, 100, 20])
+    # x_d = np.array([1, 1])
+    # # Optimal bandwidth parameters
+    # h_opt = np.array([7.8, 82.48400000000001, 18.54])
+    # g_opt = np.array([5.4, 1.8])
     # H = iteratively_reweighted_least_squares(tau, df[['int_rate']].to_numpy(),
-    #                                          df[['funded_amnt', 'annual_inc', 'dti']].to_numpy(),
-    #                                          np.array([25, 100, 20]),
-    #                                          df[['emp_length', 'purpose']].to_numpy(), np.array([1, 1]),
-    #                                          np.array([7.8, 82.48400000000001, 18.54]), np.array([5.4, 1.8]))
-    # print(f"H: {H}, tau: {tau}")
+    #                                          df[['funded_amnt', 'annual_inc', 'dti']].to_numpy(), x_c,
+    #                                          df[['emp_length', 'purpose']].to_numpy(), x_d,
+    #                                          h_opt, g_opt)
     # try:
     #     gamma = compute_gamma(H, tau, mu, sigma)
     #     portfolio_weights = compute_portfolio_weights(gamma, mu, sigma)
     #     print(f"H: {H}, tau: {tau}, gamma: {gamma}, portfolio_weights: {portfolio_weights}")
     # except InfeasibleProblemException:
-    #     print("Infeasible")
     #     pass
